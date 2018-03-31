@@ -61,6 +61,7 @@ namespace CodeAnalizer
                 Console.WriteLine("Catch Clauses  " + walker.GetCatchClausesCount() + "\n");
                 Console.WriteLine("Logged if Statements " + walker.GetLoggedIfStatements() + "\n");
                 Console.WriteLine("Logged CatchClauses " + walker.GetLoggedCatchClauses() + "\n");
+                Console.WriteLine("Logged try Statements " + walker.GetLoggedTryStatements() + "\n");
 
             }
         }
