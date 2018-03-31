@@ -23,6 +23,7 @@ namespace CodeAnalizer
         int trystatements;
         int loggedifStatements;
         int loggedCatchClauses;
+        int loggedtryStatements;
         public Project currentProject{get; set;}
         public CodeWalker(Configuration configuration)
         {
@@ -36,6 +37,7 @@ namespace CodeAnalizer
             trystatements = 0;
             loggedifStatements = 0;
             loggedCatchClauses = 0;
+            loggedtryStatements = 0;
             foreach (var file in currentProject.Documents)
             {
                 Console.WriteLine("Source analyzed: " + file.FilePath + "\n");
@@ -77,6 +79,14 @@ namespace CodeAnalizer
         {
             base.VisitTryStatement(node);
             Console.WriteLine("has a try statement");
+            var block = node.ChildNodes();
+            foreach (var statement in block)
+            {
+                if (configuration.IsLogStatement(statement))
+                {
+                    loggedtryStatements++;
+                }
+            }
             trystatements++;
         }
         public int GetIfStatementsCount()
@@ -98,6 +108,10 @@ namespace CodeAnalizer
         public int GetLoggedCatchClauses()
         {
             return loggedCatchClauses;
+        }
+        public int GetLoggedTryStatements()
+        {
+            return loggedtryStatements;
         }
     }
         
