@@ -15,7 +15,15 @@ namespace CodeAnalizer
     {
         static void Main(string[] args)
         {
-            var workspace = MSBuildWorkspace.Create();
+            String solutionPath = args[0];
+            String configurationPath = args[1];
+            Configuration conf = new Configuration();
+            conf.LoadConfigurations(configurationPath);
+            Analizer analizer = new Analizer(conf);
+            analizer.LoadSolution(solutionPath);
+            Console.WriteLine("Projects number: " + analizer.NumberProjects());
+            analizer.AnalizeSolution();
+            Console.Read();
         }
     }
 }

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CodeAnalizer": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\alejandro\\C++\\Comp6761App\\LogAnalysisTool\\LogAnalysisTool.sln D:\\alejandro\\C++\\Comp6761App\\LogAnalysisTool\\Config.txt"
+    }
+  }
+}
