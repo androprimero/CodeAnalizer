@@ -56,13 +56,18 @@ namespace CodeAnalizer
                 walker.currentProject = project;
                 walker.AnalizeProject();
                 Console.WriteLine("---Results project---\n");
-                Console.WriteLine("If Statements  " + walker.GetIfStatementsCount()+"\n");
-                Console.WriteLine("Try Statements " + walker.GetTryStatementsCount() + "\n");
-                Console.WriteLine("Catch Clauses  " + walker.GetCatchClausesCount() + "\n");
-                Console.WriteLine("Logged if Statements " + walker.GetLoggedIfStatements() + "\n");
-                Console.WriteLine("Logged CatchClauses " + walker.GetLoggedCatchClauses() + "\n");
-                Console.WriteLine("Logged try Statements " + walker.GetLoggedTryStatements() + "\n");
-
+                Console.WriteLine("Lines of Code: " + walker.GetStatistic("LinesOfCode") + "\n");
+                Console.WriteLine("Total syntax nodes: " + walker.GetStatistic("SyntaxNodes") + "\n");
+                Console.WriteLine("If Statements  " + walker.GetStatistic("IfStatements") + "\n");
+                Console.WriteLine("Try Statements " + walker.GetStatistic("TryStatements") + "\n");
+                Console.WriteLine("Catch Clauses  " + walker.GetStatistic("CatchClauses") + "\n");
+                Console.WriteLine("Logged if Statements " + walker.GetStatistic("LoggedIfStatements") + "\n");
+                Console.WriteLine("Logged CatchClauses " + walker.GetStatistic("LoggedCatchClauses") + "\n");
+                Console.WriteLine("Logged try Statements " + walker.GetStatistic("LoggedTryStatements") + "\n");
+                Console.WriteLine("Empty catch statements " + walker.GetStatistic("EmptyCatchClauses") + "\n");
+                Console.WriteLine("Logged try return Statements " + walker.GetStatistic("LoggedRetrunTry") + "\n");
+                Console.WriteLine("Logged try throw Statements " + walker.GetStatistic("LoggedThrowTry") + "\n");
+                Console.WriteLine("Exceptions cought :" + walker.GetCatchKeys() + "\n");
             }
         }
     }

@@ -18,101 +18,261 @@ namespace CodeAnalizer
         SemanticModel model;
         Compilation compilation;
         Configuration configuration;
-        int ifstatements;
-        int catchclauses;
-        int trystatements;
-        int loggedifStatements;
-        int loggedCatchClauses;
-        int loggedtryStatements;
+        bool blockAlreadyLogged;
+        Dictionary<String, int> Stats;
+        Dictionary<String,int> tryValues;
+        Dictionary<String,int> catchValues;
         public Project currentProject{get; set;}
         public CodeWalker(Configuration configuration)
         {
             this.configuration = configuration;
+            Stats = new Dictionary<String, int>();
+            tryValues = new Dictionary<String, int>();
+            catchValues = new Dictionary<String, int>();
         }
         public void AnalizeProject()
         {
             compilation = currentProject.GetCompilationAsync().Result;
-            ifstatements = 0;
-            catchclauses = 0;
-            trystatements = 0;
-            loggedifStatements = 0;
-            loggedCatchClauses = 0;
-            loggedtryStatements = 0;
             foreach (var file in currentProject.Documents)
             {
                 Console.WriteLine("Source analyzed: " + file.FilePath + "\n");
                 tree = file.GetSyntaxTreeAsync().Result;
                 model = compilation.GetSemanticModel(tree);
+                AddStatistic("SyntaxNodes", tree.GetRoot().ChildNodes().Count());
+                AddStatistic("LinesOfCode", tree.GetText().Lines.Count);
                 Visit(tree.GetRoot());
+                blockAlreadyLogged = false;
             }
             
         }
         public override void VisitIfStatement(IfStatementSyntax node)
         {
             base.VisitIfStatement(node);
-            ifstatements++;
+            AddStatistic("IfStatements");
             var block = node.ChildNodes();
             foreach(var statement in block)
             {
                 if (configuration.IsLogStatement(statement))
                 {
-                    loggedifStatements++;
+                    AddStatistic("LoggedIfStatements");
                 }
             }
-            Console.WriteLine("has an if Statement");
         }
         public override void VisitCatchClause(CatchClauseSyntax node)
         {
             base.VisitCatchClause(node);
-            Console.WriteLine("has a catch Clause");
             var block = node.ChildNodes();
-            foreach (var statement in block)
+            var declarationchild = node.Declaration.ChildNodes();
+            foreach(var child in declarationchild)
             {
-                if (configuration.IsLogStatement(statement))
+                AddCatchValues(child.ToString());
+            }
+            if(block.Count() == 0) {
+                AddStatistic("EmptyCatchClauses");
+            }
+            else
+            {
+                foreach (var statement in block)
                 {
-                    loggedCatchClauses++;
+                    if (configuration.IsLogStatement(statement))
+                    {
+                        blockAlreadyLogged = true;
+                        AddStatistic("LoggedCatchClauses");
+                    }
+                    else
+                    {
+                        AnalyzeKindCatch(statement.Kind());
+                    }
                 }
             }
-            catchclauses++;
+            AddStatistic("CatchClauses");
         }
+
         public override void VisitTryStatement(TryStatementSyntax node)
         {
             base.VisitTryStatement(node);
-            Console.WriteLine("has a try statement");
             var block = node.ChildNodes();
             foreach (var statement in block)
             {
                 if (configuration.IsLogStatement(statement))
                 {
-                    loggedtryStatements++;
+                    AddStatistic("LoggedTryStatements");
+                    blockAlreadyLogged = true;
+                }
+                else
+                {
+                    AnalyzeKindTry(statement.Kind(),statement);
                 }
             }
-            trystatements++;
+            AddStatistic("TryStatements");
         }
-        public int GetIfStatementsCount()
+        public int GetStatistic(String Statistic)
         {
-            return ifstatements;
+            if (Stats.ContainsKey(Statistic))
+            {
+                return Stats[Statistic];
+            }
+            else
+            {
+                return 0;
+            }
         }
-        public int GetCatchClausesCount()
+        private void AnalyzeKindCatch(SyntaxKind kind)
         {
-            return catchclauses;
+            switch (kind)
+            {
+                case SyntaxKind.ReturnStatement:
+                    if (blockAlreadyLogged)
+                    {
+                        AddStatistic("LoggedReturnCatchs");
+                    }
+                    else
+                    {
+                        AddStatistic("NotLoggedReturnCatchs");
+                    }
+                    break;
+                case SyntaxKind.ThrowStatement:
+                    if (blockAlreadyLogged)
+                    {
+                        AddStatistic("LoggedThrowCatchs");
+                    }
+                    else
+                    {
+                        AddStatistic("NotLoggedThrowCatchs");
+                    }
+                    break;
+            }
         }
-        public int GetTryStatementsCount()
+        private void AnalyzeKindTry(SyntaxKind Kind,SyntaxNode statement)
         {
-            return trystatements;
+            switch (Kind)
+            {
+                case SyntaxKind.ReturnStatement:
+                    if (blockAlreadyLogged)
+                    {
+                        AddStatistic("LoggedReturnTry");
+                    }else
+                    {
+                        AddStatistic("NotLoggedReturnTry");
+                    }
+                    break;
+                case SyntaxKind.ThrowStatement:
+                    if (blockAlreadyLogged)
+                    {
+                        AddStatistic("LoggedThrowTry");
+                    }
+                    else
+                    {
+                        AddStatistic("NotLoggedThrowTry");
+                    }
+                    break;
+                case SyntaxKind.IfStatement:
+                    if (blockAlreadyLogged)
+                    {
+                        AddTryValues("LoggedTryIfStatement");
+                    }
+                    else
+                    {
+                        AddTryValues("NotLoggedTryIfStatement");
+                    }
+                    break;
+                case SyntaxKind.InvocationExpression:
+                    Console.WriteLine("Invocation Expresion " + statement.ToString());
+                    if (statement.ToString().Contains("Sleep"))
+                    {
+                        if (blockAlreadyLogged)
+                        {
+                            AddStatistic("LoggedSleepTry");
+                        }
+                        else
+                        {
+                            AddStatistic("NotLoggedSleepTry");
+                        }
+                    }
+                    break;
+            }
         }
-        public int GetLoggedIfStatements()
+        private void AddStatistic(String Key)
         {
-            return loggedifStatements;
+            if (Stats.ContainsKey(Key))
+            {
+                Stats[Key]++;
+            }
+            else
+            {
+                Stats.Add(Key, 1);
+            }
         }
-        public int GetLoggedCatchClauses()
+        private void AddStatistic(String Key,int Value)
         {
-            return loggedCatchClauses;
+            if (Stats.ContainsKey(Key))
+            {
+                Stats[Key] += Value;
+            }
+            else
+            {
+                Stats.Add(Key, Value);
+            }
         }
-        public int GetLoggedTryStatements()
+        private void AddTryValues(String key)
         {
-            return loggedtryStatements;
+            if (tryValues.ContainsKey(key))
+            {
+                tryValues[key]++;
+            }
+            else
+            {
+                tryValues.Add(key, 1);
+            }
         }
-    }
-        
+        private void AddTryValues(String key, int Value)
+        {
+            if (tryValues.ContainsKey(key))
+            {
+                tryValues[key] += Value;
+            }
+            else
+            {
+                tryValues.Add(key, Value);
+            }
+        }
+        private void AddCatchValues(String key)
+        {
+            if (catchValues.ContainsKey(key))
+            {
+                catchValues[key]++;
+            }
+            else
+            {
+                catchValues.Add(key, 1);
+            }
+        }
+        private void AddCatchValues(String key,int Value)
+        {
+            if (catchValues.ContainsKey(key))
+            {
+                catchValues[key] += Value;
+            }
+            else
+            {
+                catchValues.Add(key, Value);
+            }
+        }
+        public List<String> GetCatchKeys()
+        {
+            return catchValues.Keys.ToList<String>();
+        }
+        public List<String> GetTryKeys()
+        {
+            return tryValues.Keys.ToList<String>();
+        }
+        public int GetCactchValue(String Key)
+        {
+            return catchValues[Key];
+        }
+        public int GetTryValue(String key)
+        {
+            return tryValues[key];
+        }
+    }     
 }
