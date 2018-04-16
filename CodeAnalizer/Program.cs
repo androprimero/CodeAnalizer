@@ -24,7 +24,6 @@ namespace CodeAnalizer
             Console.WriteLine("Projects number: " + analizer.NumberProjects());
             analizer.AnalizeSolution();
             Console.Read();
-            
         }
     }
 }
