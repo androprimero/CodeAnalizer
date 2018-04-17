@@ -67,7 +67,14 @@ namespace CodeAnalizer
                 Console.WriteLine("Empty catch statements " + walker.GetStatistic("EmptyCatchClauses") + "\n");
                 Console.WriteLine("Logged try return Statements " + walker.GetStatistic("LoggedRetrunTry") + "\n");
                 Console.WriteLine("Logged try throw Statements " + walker.GetStatistic("LoggedThrowTry") + "\n");
-                Console.WriteLine("Exceptions cought :" + walker.GetCatchKeys() + "\n");
+                foreach(var exception in walker.GetCatchKeys())
+                {
+                    Console.WriteLine(exception + ": " + walker.GetCactchValue(exception)+"\n");
+                }
+                foreach(var tryvalue in walker.GetTryKeys())
+                {
+                    Console.WriteLine(tryvalue + ": " + walker.GetTryValue(tryvalue));
+                }
             }
         }
     }
