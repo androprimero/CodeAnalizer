@@ -63,10 +63,6 @@ namespace CodeAnalizer
             base.VisitCatchClause(node);
             var block = node.ChildNodes();
             var declarationchild = node.Declaration.ChildNodes();
-            foreach(var child in declarationchild)
-            {
-                AddCatchValues(child.ToString());
-            }
             if(block.Count() == 0) {
                 AddStatistic("EmptyCatchClauses");
             }
@@ -83,6 +79,13 @@ namespace CodeAnalizer
                     {
                         AnalyzeKindCatch(statement.Kind());
                     }
+                }
+            }
+            if (blockAlreadyLogged)
+            {
+                foreach (var child in declarationchild)
+                {
+                    AddCatchValues(child.ToString());
                 }
             }
             AddStatistic("CatchClauses");
@@ -167,13 +170,15 @@ namespace CodeAnalizer
                     }
                     break;
                 case SyntaxKind.IfStatement:
+                    int trynumber = GetStatistic("TryStatements");
+                    AddTryValues("IfStatements" + trynumber.ToString());
                     if (blockAlreadyLogged)
                     {
-                        AddTryValues("LoggedTryIfStatement");
+                        AddTryValues("LoggedTryIfStatement"+trynumber.ToString());
                     }
                     else
                     {
-                        AddTryValues("NotLoggedTryIfStatement");
+                        AddTryValues("NotLoggedTryIfStatement"+trynumber.ToString());
                     }
                     break;
                 case SyntaxKind.InvocationExpression:
