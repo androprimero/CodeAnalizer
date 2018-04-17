@@ -30,7 +30,7 @@ namespace CodeAnalizer
             Stats = new Dictionary<String, int>();
             tryValues = new Dictionary<String, int>();
             catchValues = new Dictionary<String, int>();
-			      elseValues = new Dictionary<string, int>();
+			elseValues = new Dictionary<string, int>();
         }
         public void AnalizeProject()
         {
@@ -128,6 +128,7 @@ namespace CodeAnalizer
             }
             AddStatistic("TryStatements");
         }
+
         public override void VisitBlock(BlockSyntax node)
         {
             base.VisitBlock(node);
@@ -141,6 +142,7 @@ namespace CodeAnalizer
                 }
             }
         }
+
         public int GetStatistic(String Statistic)
         {
             if (Stats.ContainsKey(Statistic))
@@ -152,6 +154,7 @@ namespace CodeAnalizer
                 return 0;
             }
         }
+
         private void AnalyzeKindCatch(SyntaxKind kind)
         {
             switch (kind)
@@ -178,6 +181,7 @@ namespace CodeAnalizer
                     break;
             }
         }
+
         private void AnalyzeKindTry(SyntaxKind Kind,SyntaxNode statement)
         {
             switch (Kind)
@@ -229,6 +233,7 @@ namespace CodeAnalizer
                     break;
             }
         }
+
         private void AnalyzeKindElse(SyntaxKind kind)
         {
             switch (kind)
@@ -255,6 +260,7 @@ namespace CodeAnalizer
                     break;
             }
         }
+
         private void AddStatistic(String Key)
         {
             if (Stats.ContainsKey(Key))
@@ -266,6 +272,7 @@ namespace CodeAnalizer
                 Stats.Add(Key, 1);
             }
         }
+
         private void AddStatistic(String Key,int Value)
         {
             if (Stats.ContainsKey(Key))
@@ -277,6 +284,7 @@ namespace CodeAnalizer
                 Stats.Add(Key, Value);
             }
         }
+
         private void AddTryValues(String key)
         {
             if (tryValues.ContainsKey(key))
@@ -288,6 +296,7 @@ namespace CodeAnalizer
                 tryValues.Add(key, 1);
             }
         }
+
         private void AddTryValues(String key, int Value)
         {
             if (tryValues.ContainsKey(key))
@@ -299,6 +308,7 @@ namespace CodeAnalizer
                 tryValues.Add(key, Value);
             }
         }
+
         private void AddCatchValues(String key)
         {
             if (catchValues.ContainsKey(key))
@@ -310,6 +320,7 @@ namespace CodeAnalizer
                 catchValues.Add(key, 1);
             }
         }
+
         private void AddCatchValues(String key,int Value)
         {
             if (catchValues.ContainsKey(key))
@@ -321,6 +332,7 @@ namespace CodeAnalizer
                 catchValues.Add(key, Value);
             }
         }
+
         private void AddElseValues(String key, int Value)
         {
             if (elseValues.ContainsKey(key))
@@ -332,29 +344,36 @@ namespace CodeAnalizer
                 elseValues.Add(key, Value);
             }
         }
+
         public List<String> GetCatchKeys()
         {
             return catchValues.Keys.ToList<String>();
         }
+
         public List<String> GetTryKeys()
         {
             return tryValues.Keys.ToList<String>();
         }
+
         public List<String> GetElseKeys()
         {
             return elseValues.Keys.ToList<String>();
         }
+
         public int GetCactchValue(String Key)
         {
             return catchValues[Key];
         }
+
         public int GetTryValue(String key)
         {
             return tryValues[key];
         }
+
         public int GetElseValue(String key)
         {
             return elseValues[key];
         }
+
     }     
 }
