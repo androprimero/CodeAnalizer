@@ -22,6 +22,7 @@ namespace CodeAnalizer
         Dictionary<String, int> Stats;
         Dictionary<String,int> tryValues;
         Dictionary<String,int> catchValues;
+        Dictionary<String, int> elseValues;
         public Project currentProject{get; set;}
         public CodeWalker(Configuration configuration)
         {
@@ -55,6 +56,23 @@ namespace CodeAnalizer
                 if (configuration.IsLogStatement(statement))
                 {
                     AddStatistic("LoggedIfStatements");
+                }
+            }
+        }
+        public override void VisitElseClause(ElseClauseSyntax node)
+        {
+            base.VisitElseClause(node);
+            AddStatistic("ElseStatements");
+            var block = node.ChildNodes();
+            foreach (var statement in block)
+            {
+                if (configuration.IsLogStatement(statement))
+                {
+                    AddStatistic("LoggedElseStatements");
+                }
+                else
+                {
+                    AnalyzeKindElse(statement.Kind());
                 }
             }
         }
@@ -108,6 +126,19 @@ namespace CodeAnalizer
                 }
             }
             AddStatistic("TryStatements");
+        }
+        public override void VisitBlock(BlockSyntax node)
+        {
+            base.VisitBlock(node);
+            AddStatistic("BlockStatements");
+            var block = node.ChildNodes();
+            foreach (var statement in block)
+            {
+                if (configuration.IsLogStatement(statement))
+                {
+                    AddStatistic("Logged Block Statements");
+                }
+            }
         }
         public int GetStatistic(String Statistic)
         {
@@ -197,6 +228,32 @@ namespace CodeAnalizer
                     break;
             }
         }
+        private void AnalyzeKindElse(SyntaxKind kind)
+        {
+            switch (kind)
+            {
+                case SyntaxKind.ReturnStatement:
+                    if (blockAlreadyLogged)
+                    {
+                        AddStatistic("LoggedReturnElse");
+                    }
+                    else
+                    {
+                        AddStatistic("NotLoggedReturnElse");
+                    }
+                    break;
+                case SyntaxKind.ThrowStatement:
+                    if (blockAlreadyLogged)
+                    {
+                        AddStatistic("LoggedThrowElse");
+                    }
+                    else
+                    {
+                        AddStatistic("NotLoggedThrowElse");
+                    }
+                    break;
+            }
+        }
         private void AddStatistic(String Key)
         {
             if (Stats.ContainsKey(Key))
@@ -263,6 +320,17 @@ namespace CodeAnalizer
                 catchValues.Add(key, Value);
             }
         }
+        private void AddElseValues(String key, int Value)
+        {
+            if (elseValues.ContainsKey(key))
+            {
+                elseValues[key] += Value;
+            }
+            else
+            {
+                elseValues.Add(key, Value);
+            }
+        }
         public List<String> GetCatchKeys()
         {
             return catchValues.Keys.ToList<String>();
@@ -271,6 +339,10 @@ namespace CodeAnalizer
         {
             return tryValues.Keys.ToList<String>();
         }
+        public List<String> GetElseKeys()
+        {
+            return elseValues.Keys.ToList<String>();
+        }
         public int GetCactchValue(String Key)
         {
             return catchValues[Key];
@@ -278,6 +350,10 @@ namespace CodeAnalizer
         public int GetTryValue(String key)
         {
             return tryValues[key];
+        }
+        public int GetElseValue(String key)
+        {
+            return elseValues[key];
         }
     }     
 }
