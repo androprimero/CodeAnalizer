@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Symbols;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
-using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.Text;	
 
 namespace CodeAnalizer
 {
@@ -30,6 +30,7 @@ namespace CodeAnalizer
             Stats = new Dictionary<String, int>();
             tryValues = new Dictionary<String, int>();
             catchValues = new Dictionary<String, int>();
+			      elseValues = new Dictionary<string, int>();
         }
         public void AnalizeProject()
         {
@@ -77,7 +78,7 @@ namespace CodeAnalizer
             }
         }
         public override void VisitCatchClause(CatchClauseSyntax node)
-        {
+       {
             base.VisitCatchClause(node);
             var block = node.ChildNodes();
             var declarationchild = node.Declaration.ChildNodes();
