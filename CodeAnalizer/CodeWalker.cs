@@ -143,6 +143,10 @@ namespace CodeAnalizer
             }
         }
 
+        public List<String> GetStatisticName()
+        {
+            return Stats.Keys.ToList<String>();
+        }
         public int GetStatistic(String Statistic)
         {
             if (Stats.ContainsKey(Statistic))
