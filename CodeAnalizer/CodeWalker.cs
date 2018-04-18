@@ -21,17 +21,19 @@ namespace CodeAnalizer
         bool blockAlreadyLogged;
         Dictionary<String, int> Stats;
         Dictionary<String,int> tryValues;
-        Dictionary<String,int> catchValues;
+        Dictionary<String,bool> catchValues;
         Dictionary<String, int> elseValues;
         public Project currentProject{get; set;}
+
         public CodeWalker(Configuration configuration)
         {
             this.configuration = configuration;
             Stats = new Dictionary<String, int>();
             tryValues = new Dictionary<String, int>();
-            catchValues = new Dictionary<String, int>();
+            catchValues = new Dictionary<String, bool>();
 			elseValues = new Dictionary<string, int>();
         }
+
         public void AnalizeProject()
         {
             compilation = currentProject.GetCompilationAsync().Result;
@@ -47,9 +49,34 @@ namespace CodeAnalizer
             }
             
         }
-        public override void VisitIfStatement(IfStatementSyntax node)
+        public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
-            base.VisitIfStatement(node);
+            base.VisitMethodDeclaration(node);
+            Console.WriteLine("Method " + node.Identifier.ToString());
+            BlockSyntax body = node.Body;
+            AnalizeBlock(body);
+        }
+
+        public void AnalizeBlock(BlockSyntax block)
+        {
+            var childs = block.ChildNodes();
+            foreach(var child in childs)
+            {
+                switch (child.Kind())
+                {
+                    case SyntaxKind.IfStatement:
+                        Console.WriteLine("IfStatement");
+                        IfStatement((IfStatementSyntax)child);
+                        break;
+                    case SyntaxKind.TryStatement:
+                        Console.WriteLine("tryStatement");
+                        TryStatement((TryStatementSyntax)child);
+                        break;
+                }
+            }
+        }
+        public void IfStatement(IfStatementSyntax node)
+        {
             AddStatistic("IfStatements");
             var block = node.ChildNodes();
             foreach(var statement in block)
@@ -59,10 +86,15 @@ namespace CodeAnalizer
                     AddStatistic("LoggedIfStatements");
                 }
             }
+            if (node.Else !=null)
+            {
+                Console.WriteLine("else clause");
+                ElseClause(node.Else);
+            }
         }
-        public override void VisitElseClause(ElseClauseSyntax node)
+
+        public void ElseClause(ElseClauseSyntax node)
         {
-            base.VisitElseClause(node);
             AddStatistic("ElseStatements");
             var block = node.ChildNodes();
             foreach (var statement in block)
@@ -77,9 +109,31 @@ namespace CodeAnalizer
                 }
             }
         }
-        public override void VisitCatchClause(CatchClauseSyntax node)
-       {
-            base.VisitCatchClause(node);
+
+        public void TryStatement(TryStatementSyntax node)
+        {
+            var block = node.Block.ChildNodes();
+            AddStatistic("TryStatements");
+            foreach (var statement in block)
+            {
+                if (configuration.IsLogStatement(statement))
+                {
+                    AddStatistic("LoggedTryStatements");
+                    blockAlreadyLogged = true;
+                }
+                else
+                {
+                    AnalyzeKindTry(statement.Kind(), statement);
+                }
+            }
+            foreach(var catchClause in node.Catches)
+            {
+                CatchClause(catchClause);
+            }
+        }
+
+        public void CatchClause(CatchClauseSyntax node)
+        {
             var block = node.ChildNodes();
             var declarationchild = node.Declaration.ChildNodes();
             if(block.Count() == 0) {
@@ -100,65 +154,13 @@ namespace CodeAnalizer
                     }
                 }
             }
-            if (blockAlreadyLogged)
+            foreach (var child in declarationchild)
             {
-                foreach (var child in declarationchild)
-                {
-                    AddCatchValues(child.ToString());
-                }
+                    AddCatchValues(child.ToString(),blockAlreadyLogged);
             }
             AddStatistic("CatchClauses");
         }
-
-        public override void VisitTryStatement(TryStatementSyntax node)
-        {
-            base.VisitTryStatement(node);
-            var block = node.ChildNodes();
-            foreach (var statement in block)
-            {
-                if (configuration.IsLogStatement(statement))
-                {
-                    AddStatistic("LoggedTryStatements");
-                    blockAlreadyLogged = true;
-                }
-                else
-                {
-                    AnalyzeKindTry(statement.Kind(),statement);
-                }
-            }
-            AddStatistic("TryStatements");
-        }
-
-        public override void VisitBlock(BlockSyntax node)
-        {
-            base.VisitBlock(node);
-            AddStatistic("BlockStatements");
-            var block = node.ChildNodes();
-            foreach (var statement in block)
-            {
-                if (configuration.IsLogStatement(statement))
-                {
-                    AddStatistic("Logged Block Statements");
-                }
-            }
-        }
-
-        public List<String> GetStatisticName()
-        {
-            return Stats.Keys.ToList<String>();
-        }
-        public int GetStatistic(String Statistic)
-        {
-            if (Stats.ContainsKey(Statistic))
-            {
-                return Stats[Statistic];
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
+        
         private void AnalyzeKindCatch(SyntaxKind kind)
         {
             switch (kind)
@@ -315,23 +317,15 @@ namespace CodeAnalizer
 
         private void AddCatchValues(String key)
         {
-            if (catchValues.ContainsKey(key))
+            if (!catchValues.ContainsKey(key)) // catch exceptions that are logged
             {
-                catchValues[key]++;
-            }
-            else
-            {
-                catchValues.Add(key, 1);
+                catchValues.Add(key, true);
             }
         }
 
-        private void AddCatchValues(String key,int Value)
+        private void AddCatchValues(String key,bool Value)
         {
-            if (catchValues.ContainsKey(key))
-            {
-                catchValues[key] += Value;
-            }
-            else
+            if (!catchValues.ContainsKey(key))
             {
                 catchValues.Add(key, Value);
             }
@@ -364,7 +358,7 @@ namespace CodeAnalizer
             return elseValues.Keys.ToList<String>();
         }
 
-        public int GetCactchValue(String Key)
+        public bool GetCactchValue(String Key)
         {
             return catchValues[Key];
         }
@@ -379,5 +373,21 @@ namespace CodeAnalizer
             return elseValues[key];
         }
 
+        public List<String> GetStatisticName()
+        {
+            return Stats.Keys.ToList<String>();
+        }
+
+        public int GetStatistic(String Statistic)
+        {
+            if (Stats.ContainsKey(Statistic))
+            {
+                return Stats[Statistic];
+            }
+            else
+            {
+                return 0;
+            }
+        }
     }     
 }
