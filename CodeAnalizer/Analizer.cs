@@ -54,7 +54,7 @@ namespace CodeAnalizer
             foreach(Project project in projects)
             {
                 Logger.Log("Project analyzed: " + project.FilePath);
-                walker.currentProject = project;
+                walker.CurrentProject = project;
                 walker.AnalizeProject();
                 foreach(var name in walker.GetStatisticName())
                 {

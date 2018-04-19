@@ -18,26 +18,33 @@ namespace CodeAnalizer
         SemanticModel model;
         Compilation compilation;
         Configuration configuration;
+        bool methodLogged;
         bool blockAlreadyLogged;
+        bool ifStatementlogged;
+        bool tryStatementlogged;
+        bool HasTry;
+        bool HasIf;
         Dictionary<String, int> Stats;
         Dictionary<String,int> tryValues;
+        Dictionary<String, bool> ifValues;
         Dictionary<String,bool> catchValues;
         Dictionary<String, int> elseValues;
-        public Project currentProject{get; set;}
+        public Project CurrentProject{get; set;}
 
         public CodeWalker(Configuration configuration)
         {
             this.configuration = configuration;
             Stats = new Dictionary<String, int>();
             tryValues = new Dictionary<String, int>();
+            ifValues = new Dictionary<string, bool>();
             catchValues = new Dictionary<String, bool>();
 			elseValues = new Dictionary<string, int>();
         }
 
         public void AnalizeProject()
         {
-            compilation = currentProject.GetCompilationAsync().Result;
-            foreach (var file in currentProject.Documents)
+            compilation = CurrentProject.GetCompilationAsync().Result;
+            foreach (var file in CurrentProject.Documents)
             {
                 Console.WriteLine("Source analyzed: " + file.FilePath + "\n");
                 tree = file.GetSyntaxTreeAsync().Result;
@@ -52,11 +59,30 @@ namespace CodeAnalizer
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
             base.VisitMethodDeclaration(node);
+            methodLogged = false;
+            HasIf = false;
+            HasTry = false;
             Console.WriteLine("Method " + node.Identifier.ToString());
             BlockSyntax body = node.Body;
+            FindLogStatements(body);
+            if (methodLogged)
+            {
+                AddStatistic("MethodLogged");
+            }
             AnalizeBlock(body);
         }
 
+        private void FindLogStatements(BlockSyntax block)
+        {
+            var statements = block.ChildNodes();
+            foreach(var statement in statements)
+            {
+                if (configuration.IsLogStatement(statement))
+                {
+                    methodLogged = true;
+                }
+            }
+        }
         public void AnalizeBlock(BlockSyntax block)
         {
             var childs = block.ChildNodes();
@@ -65,11 +91,9 @@ namespace CodeAnalizer
                 switch (child.Kind())
                 {
                     case SyntaxKind.IfStatement:
-                        Console.WriteLine("IfStatement");
                         IfStatement((IfStatementSyntax)child);
                         break;
                     case SyntaxKind.TryStatement:
-                        Console.WriteLine("tryStatement");
                         TryStatement((TryStatementSyntax)child);
                         break;
                 }
@@ -77,13 +101,32 @@ namespace CodeAnalizer
         }
         public void IfStatement(IfStatementSyntax node)
         {
+            HasIf = true;
+            ifStatementlogged = false;
             AddStatistic("IfStatements");
             var block = node.ChildNodes();
+            var condition = node.Condition;
+            if (condition.ToString().Contains("null"))
+            {
+                AddIfValues("NullValueCondition");
+            }
             foreach(var statement in block)
             {
                 if (configuration.IsLogStatement(statement))
                 {
+                    ifStatementlogged = true;
                     AddStatistic("LoggedIfStatements");
+                }
+                else
+                {
+                    if (statement.IsKind(SyntaxKind.TryStatement))
+                    {
+                        TryStatement((TryStatementSyntax)statement);
+                    }
+                    else
+                    {
+                        AnalyzeKindIf(statement.Kind());
+                    }
                 }
             }
             if (node.Else !=null)
@@ -113,6 +156,7 @@ namespace CodeAnalizer
         public void TryStatement(TryStatementSyntax node)
         {
             var block = node.Block.ChildNodes();
+            HasTry = true;
             AddStatistic("TryStatements");
             foreach (var statement in block)
             {
@@ -134,7 +178,7 @@ namespace CodeAnalizer
 
         public void CatchClause(CatchClauseSyntax node)
         {
-            var block = node.ChildNodes();
+            var block = node.Block.ChildNodes();
             var declarationchild = node.Declaration.ChildNodes();
             if(block.Count() == 0) {
                 AddStatistic("EmptyCatchClauses");
@@ -166,6 +210,7 @@ namespace CodeAnalizer
             switch (kind)
             {
                 case SyntaxKind.ReturnStatement:
+                    AddCatchValues("ReturnCatch",blockAlreadyLogged);
                     if (blockAlreadyLogged)
                     {
                         AddStatistic("LoggedReturnCatchs");
@@ -176,6 +221,7 @@ namespace CodeAnalizer
                     }
                     break;
                 case SyntaxKind.ThrowStatement:
+                    AddCatchValues("ThrowCacth", blockAlreadyLogged);
                     if (blockAlreadyLogged)
                     {
                         AddStatistic("LoggedThrowCatchs");
@@ -190,8 +236,12 @@ namespace CodeAnalizer
 
         private void AnalyzeKindTry(SyntaxKind Kind,SyntaxNode statement)
         {
+            int trynumber = GetStatistic("TryStatements");
             switch (Kind)
             {
+                case SyntaxKind.VariableDeclaration:
+                    AddTryValues("VariableDeclaration" + trynumber.ToString());
+                    break;
                 case SyntaxKind.ReturnStatement:
                     if (blockAlreadyLogged)
                     {
@@ -212,9 +262,9 @@ namespace CodeAnalizer
                     }
                     break;
                 case SyntaxKind.IfStatement:
-                    int trynumber = GetStatistic("TryStatements");
+                    IfStatement((IfStatementSyntax)statement);
                     AddTryValues("IfStatements" + trynumber.ToString());
-                    if (blockAlreadyLogged)
+                    if (ifStatementlogged)
                     {
                         AddTryValues("LoggedTryIfStatement"+trynumber.ToString());
                     }
@@ -225,6 +275,7 @@ namespace CodeAnalizer
                     break;
                 case SyntaxKind.InvocationExpression:
                     Console.WriteLine("Invocation Expresion " + statement.ToString());
+                    AddTryValues("ExpresionCount" + trynumber.ToString());
                     if (statement.ToString().Contains("Sleep"))
                     {
                         if (blockAlreadyLogged)
@@ -239,7 +290,18 @@ namespace CodeAnalizer
                     break;
             }
         }
-
+        private void AnalyzeKindIf(SyntaxKind kind)
+        {
+            switch (kind)
+            {
+                case SyntaxKind.ReturnStatement:
+                    AddIfValues("ReturnStatement");
+                    break;
+                case SyntaxKind.ThrowExpression:
+                    AddIfValues("ThrowsStatement");
+                    break;
+            }
+        }
         private void AnalyzeKindElse(SyntaxKind kind)
         {
             switch (kind)
@@ -266,7 +328,10 @@ namespace CodeAnalizer
                     break;
             }
         }
-
+        private List<SyntaxNode> BreakBlock(BlockSyntax block)
+        {
+            return block.ChildNodes().ToList<SyntaxNode>();
+        }
         private void AddStatistic(String Key)
         {
             if (Stats.ContainsKey(Key))
@@ -312,6 +377,22 @@ namespace CodeAnalizer
             else
             {
                 tryValues.Add(key, Value);
+            }
+        }
+
+        private void AddIfValues(String key)
+        {
+            if (!ifValues.ContainsKey(key)) // catch exceptions that are logged
+            {
+                ifValues.Add(key, true);
+            }
+        }
+
+        private void AddIfValues(String key, bool Value)
+        {
+            if (!ifValues.ContainsKey(key))
+            {
+                ifValues.Add(key, Value);
             }
         }
 
