@@ -54,19 +54,20 @@ namespace CodeAnalizer
             foreach(Project project in projects)
             {
                 Logger.Log("Project analyzed: " + project.FilePath);
-                walker.currentProject = project;
+                walker.CurrentProject = project;
                 walker.AnalizeProject();
                 foreach(var name in walker.GetStatisticName())
                 {
                     Console.WriteLine(name + " : " + walker.GetStatistic(name));
                 }
-                foreach(var exception in walker.GetCatchKeys())
+                foreach (var sourcename in walker.GetSourceNames())
                 {
-                    Console.WriteLine(exception + ": " + walker.GetCactchValue(exception));
-                }
-                foreach(var tryvalue in walker.GetTryKeys())
-                {
-                    Console.WriteLine(tryvalue + ": " + walker.GetTryValue(tryvalue));
+                    var statitic = walker.GetMethodStatisticsValue(sourcename);
+                    foreach (var methodStats in statitic)
+                    {
+                        Console.WriteLine("Method name " + methodStats.GetMethodName()+
+                            " HasIf "+ methodStats.MethodHasIf()+" HasTry "+methodStats.MethodHasTry());
+                    }                    
                 }
             }
         }
