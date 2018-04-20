@@ -22,6 +22,7 @@ namespace CodeAnalizer
         bool blockAlreadyLogged;
         bool ifStatementlogged;
         bool tryStatementlogged;
+        bool catchClauselogged;
         bool HasTry;
         bool HasIf;
         Dictionary<String, int> Stats;
@@ -160,10 +161,10 @@ namespace CodeAnalizer
             AddStatistic("TryStatements");
             foreach (var statement in block)
             {
-                if (configuration.IsLogStatement(statement))
+                if (configuration.IsLogStatement(statement)) // log statement placed inside try statement
                 {
                     AddStatistic("LoggedTryStatements");
-                    blockAlreadyLogged = true;
+                    tryStatementlogged = true;
                 }
                 else
                 {
@@ -180,8 +181,9 @@ namespace CodeAnalizer
         {
             var block = node.Block.ChildNodes();
             var declarationchild = node.Declaration.ChildNodes();
-            if(block.Count() == 0) {
+            if(block.Count() == 0) { // captures the empty catches
                 AddStatistic("EmptyCatchClauses");
+                AddCatchValues("EmptyCatch");
             }
             else
             {
@@ -189,7 +191,7 @@ namespace CodeAnalizer
                 {
                     if (configuration.IsLogStatement(statement))
                     {
-                        blockAlreadyLogged = true;
+                        catchClauselogged =true;
                         AddStatistic("LoggedCatchClauses");
                     }
                     else
@@ -198,7 +200,7 @@ namespace CodeAnalizer
                     }
                 }
             }
-            foreach (var child in declarationchild)
+            foreach (var child in declarationchild) // captures the exception declarations
             {
                     AddCatchValues(child.ToString(),blockAlreadyLogged);
             }
@@ -210,8 +212,8 @@ namespace CodeAnalizer
             switch (kind)
             {
                 case SyntaxKind.ReturnStatement:
-                    AddCatchValues("ReturnCatch",blockAlreadyLogged);
-                    if (blockAlreadyLogged)
+                    AddCatchValues("ReturnCatch",blockAlreadyLogged); 
+                    if (catchClauselogged)// to keep general Statistics
                     {
                         AddStatistic("LoggedReturnCatchs");
                     }
@@ -222,7 +224,7 @@ namespace CodeAnalizer
                     break;
                 case SyntaxKind.ThrowStatement:
                     AddCatchValues("ThrowCacth", blockAlreadyLogged);
-                    if (blockAlreadyLogged)
+                    if (catchClauselogged)
                     {
                         AddStatistic("LoggedThrowCatchs");
                     }
@@ -243,7 +245,7 @@ namespace CodeAnalizer
                     AddTryValues("VariableDeclaration" + trynumber.ToString());
                     break;
                 case SyntaxKind.ReturnStatement:
-                    if (blockAlreadyLogged)
+                    if (tryStatementlogged)
                     {
                         AddStatistic("LoggedReturnTry");
                     }else
@@ -252,7 +254,7 @@ namespace CodeAnalizer
                     }
                     break;
                 case SyntaxKind.ThrowStatement:
-                    if (blockAlreadyLogged)
+                    if (tryStatementlogged)
                     {
                         AddStatistic("LoggedThrowTry");
                     }
@@ -266,19 +268,18 @@ namespace CodeAnalizer
                     AddTryValues("IfStatements" + trynumber.ToString());
                     if (ifStatementlogged)
                     {
-                        AddTryValues("LoggedTryIfStatement"+trynumber.ToString());
+                        AddTryValues("LoggedTryIfStatement" + trynumber.ToString());
                     }
                     else
                     {
-                        AddTryValues("NotLoggedTryIfStatement"+trynumber.ToString());
+                        AddTryValues("NotLoggedTryIfStatement" + trynumber.ToString());
                     }
                     break;
                 case SyntaxKind.InvocationExpression:
-                    Console.WriteLine("Invocation Expresion " + statement.ToString());
                     AddTryValues("ExpresionCount" + trynumber.ToString());
                     if (statement.ToString().Contains("Sleep"))
                     {
-                        if (blockAlreadyLogged)
+                        if (tryStatementlogged)
                         {
                             AddStatistic("LoggedSleepTry");
                         }
