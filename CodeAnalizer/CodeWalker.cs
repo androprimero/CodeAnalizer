@@ -25,14 +25,15 @@ namespace CodeAnalizer
         string documentPath;
         MethodStatistics methodStatistics;
         Dictionary<String, int> Stats;
-        Dictionary<String, MethodStatistics> documentStats;
+        List<MethodStatistics> statistics;
+        Dictionary<String, List<MethodStatistics>> documentStats;
         public Project CurrentProject{get; set;}
 
         public CodeWalker(Configuration configuration)
         {
             this.configuration = configuration;
             Stats = new Dictionary<String, int>(); // general Statistics
-            documentStats = new Dictionary<String, MethodStatistics>(); // Statistics classified by document 
+            documentStats = new Dictionary<String, List<MethodStatistics>>(); // Statistics classified by document 
         }
 
         public void AnalizeProject()
@@ -40,6 +41,7 @@ namespace CodeAnalizer
             compilation = CurrentProject.GetCompilationAsync().Result;
             foreach (var file in CurrentProject.Documents)
             {
+                statistics = new List<MethodStatistics>();
                 documentPath = file.FilePath;
                 Console.WriteLine("Source analyzed: " + documentPath + "\n");
                 tree = file.GetSyntaxTreeAsync().Result;
@@ -47,6 +49,7 @@ namespace CodeAnalizer
                 AddStatistic("SyntaxNodes", tree.GetRoot().ChildNodes().Count());
                 AddStatistic("LinesOfCode", tree.GetText().Lines.Count);
                 Visit(tree.GetRoot());
+                documentStats.Add(documentPath, statistics);
             }
             
         }
@@ -62,7 +65,7 @@ namespace CodeAnalizer
                 AddStatistic("MethodLogged");
             }
             AnalizeBlock(body);
-            documentStats.Add(documentPath, methodStatistics);
+            statistics.Add(methodStatistics);
         }
 
         private void FindLogStatements(BlockSyntax block)
@@ -377,11 +380,11 @@ namespace CodeAnalizer
                 return 0;
             }
         }
-        public List<String> GetMethodsNames()
+        public List<String> GetSourceNames()
         {
             return documentStats.Keys.ToList<String>();
         }
-        public MethodStatistics GetMethodStatisticsValue(String key)
+        public List<MethodStatistics> GetMethodStatisticsValue(String key)
         {
             return documentStats[key];
         }

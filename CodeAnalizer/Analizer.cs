@@ -60,31 +60,14 @@ namespace CodeAnalizer
                 {
                     Console.WriteLine(name + " : " + walker.GetStatistic(name));
                 }
-                foreach (var methodname in walker.GetMethodsNames())
+                foreach (var sourcename in walker.GetSourceNames())
                 {
-                    var statitic = walker.GetMethodStatisticsValue(methodname);
-                    Console.WriteLine("Has try" + statitic.Item1);
-                    Console.WriteLine("Has If " +statitic.Item2);
-                    var ifValueskey = statitic.Item3.Keys;
-                    foreach(var ifKey in ifValueskey)
+                    var statitic = walker.GetMethodStatisticsValue(sourcename);
+                    foreach (var methodStats in statitic)
                     {
-                        Console.WriteLine(ifKey + statitic.Item3[ifKey]);
-                    }
-                    var elseValueskey = statitic.Item4.Keys;
-                    foreach(var elsekey in elseValueskey)
-                    {
-                        Console.WriteLine(elsekey + statitic.Item4[elsekey]);
-                    }
-                    var tryValueskey = statitic.Item5.Keys;
-                    foreach(var trykey in tryValueskey)
-                    {
-                        Console.WriteLine(trykey + statitic.Item5[trykey]);
-                    }
-                    var catchValueskey = statitic.Item6.Keys;
-                    foreach(var catchkey in catchValueskey)
-                    {
-                        Console.WriteLine(catchkey + statitic.Item6[catchkey]);
-                    }
+                        Console.WriteLine("Method name " + methodStats.GetMethodName()+
+                            " HasIf "+ methodStats.MethodHasIf()+" HasTry "+methodStats.MethodHasTry());
+                    }                    
                 }
             }
         }
