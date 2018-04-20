@@ -381,8 +381,7 @@ namespace CodeAnalizer
         {
             return documentStats.Keys.ToList<String>();
         }
-        public Tuple<bool, bool, Dictionary<String, bool>, Dictionary<String, bool>, Dictionary<String, int>, Dictionary<String, bool>>
-            GetMethodStatisticsValue(String key)
+        public MethodStatistics GetMethodStatisticsValue(String key)
         {
             return documentStats[key];
         }
