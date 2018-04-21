@@ -7,6 +7,8 @@ using Accord;
 using Accord.MachineLearning.DecisionTrees;
 using Accord.MachineLearning.DecisionTrees.Learning;
 using System.Data;
+using Accord.Statistics.Filters;
+using Accord.Math;
 namespace CodeAnalizer
 {
     public class DecisionTreeLearning
@@ -14,14 +16,20 @@ namespace CodeAnalizer
         private DecisionTree decisions;
         private DataTable dataTable;
         private DecisionVariableCollection variables;
+        private string[] columnNames;
+        private double[][] inputs;
+        private int[] output;
         //private C45Learning C45learningTree; // learning using the algorithm C45
         //private ID3Learning ID3learningTree;
-        public DecisionTreeLearning(List<DecisionVariable> decisionVariables)
+        public DecisionTreeLearning()
         {
-            dataTable = new DataTable();
+            dataTable = new DataTable("Data");
+        }
+        public void InitTree(List<DecisionVariable> decisionVariables)
+        {
             variables = new DecisionVariableCollection(decisionVariables);
-          //  C45learningTree = new C45Learning(variables.ToArray());
-          //  ID3learningTree = new ID3Learning(variables.ToArray());
+            //  C45learningTree = new C45Learning(variables.ToArray());
+            //  ID3learningTree = new ID3Learning(variables.ToArray());
         }
         public List<DecisionVariable> ToDecisionVariables(List<String> names, DecisionVariableKind kind)
         {
@@ -33,37 +41,73 @@ namespace CodeAnalizer
             }
             return decisionVariables;
         }
-      public void LoadDataColumns(List<String> columnNames)
-        {
-            if(dataTable == null) // creates a new instance of data table if there is no other
-            {
-                dataTable = new DataTable("Data"); 
 
-            }
-            dataTable.Columns.Add(columnNames.ToArray()); // Adds the columns titles
-        }
-        public void AddDataRow(Dictionary<String,int> keyValuePairs)
+        public void AddDataRow(string sourcename,MethodStatistics methodStatistics)
         {
-            List<int> row = new List<int>();
-            if (dataTable != null) // if there isn't a table is not possible to add rows
-            {
-                foreach(var column in dataTable.Columns)
+             if (dataTable != null) // if there isn't a table is not possible to add rows
+             {
+                DataRow row = dataTable.NewRow(); // create a new Instance of the row
+                //===== Common values
+                row[0] = sourcename; // the first columns is sourceFile
+                row[1] = methodStatistics.GetMethodName();
+                row[2] = methodStatistics.MethodIsLogged();
+                row[3] = methodStatistics.MethodHasIf();
+                row[4] = methodStatistics.MethodHasTry();
+                //=== End Common Values
+                foreach (var key in methodStatistics.GetIfKeys())
                 {
-                    if (keyValuePairs.ContainsKey(column.ToString()))
+                    if (!dataTable.Columns.Contains(key))
                     {
-                        row.Add(keyValuePairs[column.ToString()]); // adding the value to the row
+                        AddColumn(key);
                     }
-                    else
-                    {
-                        row.Add(0); // the column should be at 0
-                    }
+                    row[key] = methodStatistics.GetIfValue(key);
                 }
-                dataTable.Rows.Add(row.ToArray());
+                foreach (var key in methodStatistics.GetElseKeys())
+                {
+                    if (!dataTable.Columns.Contains(key))
+                    {
+                        AddColumn(key);
+                    }
+                    row[key] = methodStatistics.GetElseValue(key);
+                }
+                foreach (var key in methodStatistics.GetTryKeys())
+                {
+                    if (!dataTable.Columns.Contains(key))
+                    {
+                        AddColumn(key);
+                    }
+                    row[key] = methodStatistics.GetTryValue(key);
+                }
+                foreach (var key in methodStatistics.GetCatchKeys())
+                {
+                    if (!dataTable.Columns.Contains(key))
+                    {
+                        AddColumn(key);
+                    }
+                    row[key] = methodStatistics.GetCatchValue(key);
+                }
+                dataTable.Rows.Add(row);
+             }
+        }
+
+        public void AddColumn(String column)
+        {
+            if (!dataTable.Columns.Contains(column))
+            {
+                dataTable.Columns.Add(column);
             }
         }
+
         public DataTable GetDataTable()
         {
             return dataTable;
+        }
+
+        public void CreateInputs()
+        {
+            double[,] table = dataTable.ToMatrix(out columnNames);
+            inputs = table.GetColumns(3, dataTable.Columns.Count).ToJagged();
+            output = table.GetColumn(2).ToInt32();
         }
     }
 }
