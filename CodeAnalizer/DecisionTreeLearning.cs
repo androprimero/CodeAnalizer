@@ -18,27 +18,24 @@ namespace CodeAnalizer
         private DecisionTree decisions;
         private DataTable dataTable;
         private DecisionVariableCollection variables;
-        private List<string> columnNames;
+        private string[] columnNames;
         private int[][] inputs;
         private int[] output;
-        private int columns;
         private Codification codeBook;
-        // private C45Learning C45learningTree; // learning using the algorithm C45
+        private C45Learning C45learningTree; // learning using the algorithm C45
         private ID3Learning ID3learningTree;
         public DecisionTreeLearning()
         {
-            columns = 0;
-            columnNames = new List<string>();
             dataTable = new DataTable("Data");
         }
 
         public void InitTree(List<DecisionVariable> decisionVariables)
         {
             variables = new DecisionVariableCollection(decisionVariables);
-            // C45learningTree = new C45Learning(variables.ToArray());
-            ID3learningTree = new ID3Learning(variables.ToArray());
-            // decisions = C45learningTree.Learn(inputs, output);// train the tree
-            decisions = ID3learningTree.Learn(inputs, output);
+            C45learningTree = new C45Learning(variables.ToArray());
+            //ID3learningTree = new ID3Learning(variables.ToArray());
+            decisions = C45learningTree.Learn(inputs, output);// train the tree
+            //decisions = ID3learningTree.Learn(inputs, output);
         }
 
         public List<DecisionVariable> ToDecisionVariables(string[] names, DecisionVariableKind kind)
@@ -105,7 +102,6 @@ namespace CodeAnalizer
             if (!dataTable.Columns.Contains(column))
             {
                 dataTable.Columns.Add(column);
-                columnNames.Add(column);
             }
         }
 
@@ -116,9 +112,11 @@ namespace CodeAnalizer
 
         public void CreateInputs(string outputName)
         {
+            completeTable();
             codeBook = new Codification(dataTable);
             DataTable symbols = codeBook.Apply(dataTable);
-            string[] variableNames = SubArray(columnNames.ToArray<string>(), 3, columnNames.Count);
+            GetColumnNames();
+            string[] variableNames = SubArray(columnNames, 3, columnNames.Length);
 #pragma warning disable CS0618 // Type or member is obsolete
             inputs = symbols.ToArray<int>(variableNames);
             output = symbols.ToArray<int>(outputName);
@@ -130,12 +128,33 @@ namespace CodeAnalizer
 
         private string[] SubArray(string[] data,int index,int length)
         {
-            int realLength = length - index;
-            string[] result = new string[realLength];
-            Array.Copy(data, index, result, 0, realLength);
+            string[] result = new string[length- index];
+            Array.Copy(data, index, result, 0, length-index);
             return result;
         }
-
+        private void GetColumnNames()
+        {
+            columnNames = new string[dataTable.Columns.Count];
+            int i = 0;
+            foreach(DataColumn column in dataTable.Columns)
+            {
+                columnNames[i] = column.ColumnName;
+                i++;
+            }
+        }
+        public void completeTable()
+        {
+            foreach(DataColumn column in dataTable.Columns)
+            {
+                foreach(DataRow row in dataTable.Rows)
+                {
+                    if (string.IsNullOrEmpty(row[column].ToString()))
+                    {
+                        row[column] = 0;
+                    }
+                }
+            }
+        }
         public String GetExpression()
         {
             return decisions.ToExpression().ToString();

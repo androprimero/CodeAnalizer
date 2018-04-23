@@ -388,5 +388,9 @@ namespace CodeAnalizer
         {
             return documentStats[key];
         }
+        public void Clear()
+        {
+            documentStats.Clear();
+        }
     }     
 }

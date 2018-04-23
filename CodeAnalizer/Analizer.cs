@@ -80,6 +80,7 @@ namespace CodeAnalizer
                 }
                 learningTree.CreateInputs("MethodName");
                 Console.Write(learningTree.GetExpression());
+                walker.Clear();
             }
         }
     }
