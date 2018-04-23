@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Symbols;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using Accord.MachineLearning.DecisionTrees;
 
 namespace CodeAnalizer
 {
@@ -21,6 +22,7 @@ namespace CodeAnalizer
         CodeWalker walker;
         Configuration configuration;
         DecisionTreeLearning learningTree;
+        DecisionTree tree;
         public Analizer(Configuration conf)
         {
             workspace = MSBuildWorkspace.Create();
@@ -76,7 +78,8 @@ namespace CodeAnalizer
                         learningTree.AddDataRow(sourcename, methodStats);
                     }                    
                 }
-                learningTree.CreateInputs();
+                learningTree.CreateInputs("MethodName");
+                Console.Write(learningTree.GetExpression());
             }
         }
     }

@@ -9,6 +9,8 @@ using Accord.MachineLearning.DecisionTrees.Learning;
 using System.Data;
 using Accord.Statistics.Filters;
 using Accord.Math;
+using System.Linq.Expressions;
+
 namespace CodeAnalizer
 {
     public class DecisionTreeLearning
@@ -16,22 +18,30 @@ namespace CodeAnalizer
         private DecisionTree decisions;
         private DataTable dataTable;
         private DecisionVariableCollection variables;
-        private string[] columnNames;
-        private double[][] inputs;
+        private List<string> columnNames;
+        private int[][] inputs;
         private int[] output;
-        //private C45Learning C45learningTree; // learning using the algorithm C45
-        //private ID3Learning ID3learningTree;
+        private int columns;
+        private Codification codeBook;
+        // private C45Learning C45learningTree; // learning using the algorithm C45
+        private ID3Learning ID3learningTree;
         public DecisionTreeLearning()
         {
+            columns = 0;
+            columnNames = new List<string>();
             dataTable = new DataTable("Data");
         }
+
         public void InitTree(List<DecisionVariable> decisionVariables)
         {
             variables = new DecisionVariableCollection(decisionVariables);
-            //  C45learningTree = new C45Learning(variables.ToArray());
-            //  ID3learningTree = new ID3Learning(variables.ToArray());
+            // C45learningTree = new C45Learning(variables.ToArray());
+            ID3learningTree = new ID3Learning(variables.ToArray());
+            // decisions = C45learningTree.Learn(inputs, output);// train the tree
+            decisions = ID3learningTree.Learn(inputs, output);
         }
-        public List<DecisionVariable> ToDecisionVariables(List<String> names, DecisionVariableKind kind)
+
+        public List<DecisionVariable> ToDecisionVariables(string[] names, DecisionVariableKind kind)
         {
             List<DecisionVariable> decisionVariables = new List<DecisionVariable>();
             foreach(var name in names)
@@ -95,6 +105,7 @@ namespace CodeAnalizer
             if (!dataTable.Columns.Contains(column))
             {
                 dataTable.Columns.Add(column);
+                columnNames.Add(column);
             }
         }
 
@@ -103,11 +114,31 @@ namespace CodeAnalizer
             return dataTable;
         }
 
-        public void CreateInputs()
+        public void CreateInputs(string outputName)
         {
-            double[,] table = dataTable.ToMatrix(out columnNames);
-            inputs = table.GetColumns(3, dataTable.Columns.Count).ToJagged();
-            output = table.GetColumn(2).ToInt32();
+            codeBook = new Codification(dataTable);
+            DataTable symbols = codeBook.Apply(dataTable);
+            string[] variableNames = SubArray(columnNames.ToArray<string>(), 3, columnNames.Count);
+#pragma warning disable CS0618 // Type or member is obsolete
+            inputs = symbols.ToArray<int>(variableNames);
+            output = symbols.ToArray<int>(outputName);
+#pragma warning restore CS0618 // Type or member is obsolete
+            // check how to create the inputs and outputs to ID3tree (int)
+            variables = new DecisionVariableCollection(ToDecisionVariables(variableNames, DecisionVariableKind.Continuous));
+            InitTree(variables.ToList<DecisionVariable>());
+        }
+
+        private string[] SubArray(string[] data,int index,int length)
+        {
+            int realLength = length - index;
+            string[] result = new string[realLength];
+            Array.Copy(data, index, result, 0, realLength);
+            return result;
+        }
+
+        public String GetExpression()
+        {
+            return decisions.ToExpression().ToString();
         }
     }
 }
