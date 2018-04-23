@@ -49,7 +49,7 @@ namespace CodeAnalizer
                 AddStatistic("SyntaxNodes", tree.GetRoot().ChildNodes().Count());
                 AddStatistic("LinesOfCode", tree.GetText().Lines.Count);
                 Visit(tree.GetRoot());
-                documentStats.Add(documentPath, statistics);
+                documentStats.Add(file.Name, statistics);
             }
             
         }
@@ -387,6 +387,10 @@ namespace CodeAnalizer
         public List<MethodStatistics> GetMethodStatisticsValue(String key)
         {
             return documentStats[key];
+        }
+        public void Clear()
+        {
+            documentStats.Clear();
         }
     }     
 }

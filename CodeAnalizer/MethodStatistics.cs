@@ -160,7 +160,7 @@ namespace CodeAnalizer
             return tryValues[key];
         }
 
-        public bool GetCactchValue(String Key)
+        public bool GetCatchValue(String Key)
         {
             return catchValues[Key];
         }

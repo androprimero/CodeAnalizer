@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Data;
 using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Symbols;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using Accord.MachineLearning.DecisionTrees;
 
 namespace CodeAnalizer
 {
@@ -20,11 +22,18 @@ namespace CodeAnalizer
         CodeWalker walker;
         Configuration configuration;
         DecisionTreeLearning learningTree;
+        DecisionTree tree;
         public Analizer(Configuration conf)
         {
             workspace = MSBuildWorkspace.Create();
             configuration = conf;
             walker = new CodeWalker(conf);
+            learningTree = new DecisionTreeLearning();
+            learningTree.AddColumn("SourceFile");
+            learningTree.AddColumn("MethodName");
+            learningTree.AddColumn("MethodLogged");
+            learningTree.AddColumn("HasIf");
+            learningTree.AddColumn("HasTry");
         }
         public void LoadSolution(String SolutionPath)
         {
@@ -65,10 +74,13 @@ namespace CodeAnalizer
                     var statitic = walker.GetMethodStatisticsValue(sourcename);
                     foreach (var methodStats in statitic)
                     {
-                        Console.WriteLine("Method name " + methodStats.GetMethodName()+
-                            " HasIf "+ methodStats.MethodHasIf()+" HasTry "+methodStats.MethodHasTry());
+                        Logger.Log("Source " + sourcename + " Method Name" + methodStats.GetMethodName());
+                        learningTree.AddDataRow(sourcename, methodStats);
                     }                    
                 }
+                learningTree.CreateInputs("MethodName");
+                Console.Write(learningTree.GetExpression());
+                walker.Clear();
             }
         }
     }
