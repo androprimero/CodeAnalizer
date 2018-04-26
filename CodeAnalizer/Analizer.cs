@@ -23,8 +23,8 @@ namespace CodeAnalizer
         Configuration configuration;
         DecisionTreeLearning learningTree;
         DecisionTree tree;
-        FileManager report, Rules;
-        public Analizer(Configuration conf,String rulesPath)
+        FileManager report, Rules,Columns;
+        public Analizer(Configuration conf,String rulesPath,String columnsPath)
         {
             workspace = MSBuildWorkspace.Create();
             configuration = conf;
@@ -36,8 +36,9 @@ namespace CodeAnalizer
             learningTree.AddColumn("HasIf");
             learningTree.AddColumn("HasTry");
             Rules = new FileManager(rulesPath);
+            Columns = new FileManager(columnsPath);
         }
-        public Analizer(Configuration conf,String rulesPath, String reportPath)
+        public Analizer(Configuration conf,String rulesPath, String reportPath,String columnsPath)
         {
             workspace = MSBuildWorkspace.Create();
             configuration = conf;
@@ -50,6 +51,7 @@ namespace CodeAnalizer
             learningTree.AddColumn("HasTry");
             report = new FileManager(reportPath);
             Rules = new FileManager(rulesPath);
+            Columns = new FileManager(columnsPath);
         }
         public void LoadSolution(String SolutionPath)
         {
@@ -106,6 +108,10 @@ namespace CodeAnalizer
                 }
                 learningTree.CreateInputs("MethodName");
                 learningTree.SerilizeTree(Rules);
+                foreach(var input in learningTree.GetInputNames())
+                {
+                    Columns.writeFile(input);
+                }
                 walker.Clear();
             }
         }

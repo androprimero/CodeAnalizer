@@ -322,7 +322,6 @@ namespace CodeAnalizer
                     break;
                 case SyntaxKind.ThrowStatement:
                     methodStatistics.AddElseValues("ThrowElse");
-                    methodStatistics.AddElseValues("ThrowElse");
                     if (elseClauselogged)
                     {
                         AddStatistic("LoggedThrowElse");
