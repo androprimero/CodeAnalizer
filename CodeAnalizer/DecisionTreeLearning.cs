@@ -26,8 +26,9 @@ namespace CodeAnalizer
         private int[] output;
         private Codification codeBook;
         private C45Learning C45learningTree; // learning using the algorithm C45
-        private ID3Learning ID3learningTree;
-        private XmlSerializer xml;
+        // private ID3Learning ID3learningTree;
+        private string[] inputNames;
+
         public DecisionTreeLearning()
         {
             dataTable = new DataTable("Data");
@@ -121,6 +122,7 @@ namespace CodeAnalizer
             DataTable symbols = codeBook.Apply(dataTable);
             GetColumnNames();
             string[] variableNames = SubArray(columnNames, 3, columnNames.Length);
+            inputNames = variableNames;
 #pragma warning disable CS0618 // Type or member is obsolete
             inputs = symbols.ToArray<int>(variableNames);
             output = symbols.ToArray<int>(outputName);
@@ -169,6 +171,10 @@ namespace CodeAnalizer
         public String GetExpression()
         {
             return decisions.ToExpression().ToString();
+        }
+        public string[] GetInputNames()
+        {
+            return inputNames;
         }
     }
 }

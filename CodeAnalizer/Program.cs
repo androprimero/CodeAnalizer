@@ -20,7 +20,7 @@ namespace CodeAnalizer
             String resultPath;
             String rulesPath;
             string directory = Path.GetDirectoryName(configurationPath);
-            Console.WriteLine("Root Path" + directory);
+            String columnNames;
             if (args.Length > 2)
             {
                 if (!String.IsNullOrEmpty(args[2]))
@@ -38,9 +38,10 @@ namespace CodeAnalizer
                 resultPath = directory + Path.DirectorySeparatorChar + "Report.txt";
             }
             rulesPath = directory + Path.DirectorySeparatorChar + "Rules.xml";// File that keeps the decision tree
+            columnNames = directory + Path.DirectorySeparatorChar + "columns.txt";
             Configuration conf = new Configuration();
             conf.LoadConfigurations(configurationPath);
-            Analizer analizer = new Analizer(conf,rulesPath,resultPath);
+            Analizer analizer = new Analizer(conf,rulesPath,resultPath,columnNames);
             analizer.LoadSolution(solutionPath);
             Console.WriteLine("Projects number: " + analizer.NumberProjects());
             analizer.AnalizeSolution();
