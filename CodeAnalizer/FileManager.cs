@@ -28,6 +28,7 @@ namespace CodeAnalizer
             try
             {
                 writer.WriteLine(text);
+                writer.Flush();
                 return true;
             }catch(Exception e)
             {
