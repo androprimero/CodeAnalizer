@@ -110,7 +110,8 @@ namespace CodeAnalizer
                 learningTree.SerilizeTree(Rules);
                 foreach(var input in learningTree.GetInputNames())
                 {
-                    Columns.writeFile(input);
+                    if (!Columns.writeFile(input))
+                        Console.WriteLine(input);
                 }
                 walker.Clear();
             }
