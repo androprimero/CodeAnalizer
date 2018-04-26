@@ -23,7 +23,8 @@ namespace CodeAnalizer
         Configuration configuration;
         DecisionTreeLearning learningTree;
         DecisionTree tree;
-        public Analizer(Configuration conf)
+        FileManager report, Rules;
+        public Analizer(Configuration conf,String rulesPath)
         {
             workspace = MSBuildWorkspace.Create();
             configuration = conf;
@@ -34,6 +35,21 @@ namespace CodeAnalizer
             learningTree.AddColumn("MethodLogged");
             learningTree.AddColumn("HasIf");
             learningTree.AddColumn("HasTry");
+            Rules = new FileManager(rulesPath);
+        }
+        public Analizer(Configuration conf,String rulesPath, String reportPath)
+        {
+            workspace = MSBuildWorkspace.Create();
+            configuration = conf;
+            walker = new CodeWalker(conf);
+            learningTree = new DecisionTreeLearning();
+            learningTree.AddColumn("SourceFile");
+            learningTree.AddColumn("MethodName");
+            learningTree.AddColumn("MethodLogged");
+            learningTree.AddColumn("HasIf");
+            learningTree.AddColumn("HasTry");
+            report = new FileManager(reportPath);
+            Rules = new FileManager(rulesPath);
         }
         public void LoadSolution(String SolutionPath)
         {
@@ -62,12 +78,18 @@ namespace CodeAnalizer
             Logger.Log("Analyzing solution");
             foreach(Project project in projects)
             {
-                Logger.Log("Project analyzed: " + project.FilePath);
+                if(report != null)
+                    report.writeFile("Project analyzed: " + project.FilePath);
+                else
+                    Console.WriteLine("Project analyzed: " + project.FilePath);
                 walker.CurrentProject = project;
                 walker.AnalizeProject();
                 foreach(var name in walker.GetStatisticName())
                 {
-                    Console.WriteLine(name + " : " + walker.GetStatistic(name));
+                    if(report != null)
+                        report.writeFile(name + " : " + walker.GetStatistic(name));
+                    else
+                        Console.WriteLine(name + " : " + walker.GetStatistic(name));
                 }
                 foreach (var sourcename in walker.GetSourceNames())
                 {
@@ -75,13 +97,22 @@ namespace CodeAnalizer
                     foreach (var methodStats in statitic)
                     {
                         Logger.Log("Source " + sourcename + " Method Name" + methodStats.GetMethodName());
+                        if (report != null)
+                            report.writeFile("Source " + sourcename + " Method Name" + methodStats.GetMethodName());
+                        else
+                            Console.WriteLine("Source " + sourcename + " Method Name" + methodStats.GetMethodName());
                         learningTree.AddDataRow(sourcename, methodStats);
                     }                    
                 }
                 learningTree.CreateInputs("MethodName");
-                Console.Write(learningTree.GetExpression());
+                learningTree.SerilizeTree(Rules);
                 walker.Clear();
             }
+        }
+        public void Close()
+        {
+            Rules.close();
+            report.close();
         }
     }
 }

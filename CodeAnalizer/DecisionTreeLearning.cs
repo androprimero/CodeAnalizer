@@ -10,6 +10,9 @@ using System.Data;
 using Accord.Statistics.Filters;
 using Accord.Math;
 using System.Linq.Expressions;
+using System.Xml.Serialization;
+using System.IO;
+using Accord.IO;
 
 namespace CodeAnalizer
 {
@@ -24,6 +27,7 @@ namespace CodeAnalizer
         private Codification codeBook;
         private C45Learning C45learningTree; // learning using the algorithm C45
         private ID3Learning ID3learningTree;
+        private XmlSerializer xml;
         public DecisionTreeLearning()
         {
             dataTable = new DataTable("Data");
@@ -154,6 +158,13 @@ namespace CodeAnalizer
                     }
                 }
             }
+        }
+
+        public void SerilizeTree(FileManager manager)
+        {
+            Logger.Log("Rules Path: " + manager.GetPath());
+            manager.close();// Close the stream to allow serializer use it
+            Serializer.Save(obj: decisions, path: manager.GetPath());
         }
         public String GetExpression()
         {
